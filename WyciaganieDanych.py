@@ -24,6 +24,16 @@ def leagueTable(data, league, season):
     
     return teamStats
 
+def allTeamsTable(data):
+    import pandas as pd
+    
+    homeTeamData = data[['homeTeam', 'league']].rename(columns={'homeTeam': 'Drużyna'})
+    awayTeamData = data[['awayTeam', 'league']].rename(columns={'awayTeam': 'Drużyna'})
+    allData = pd.concat([homeTeamData, awayTeamData])
+    allData = allData.drop_duplicates().reset_index(drop=True)
+    return allData
+
+
 def teamMatches(data, season, team):
     data = data.loc[data['season'] == season]
     homeData = data.loc[data['homeTeam'] == team]
@@ -105,5 +115,8 @@ def filterPlayers(data, season, nationality, league, club, position):
     return groupedData
 
 
-
+#import pandas as pd
+#data = pd.read_csv('./Scraper/PL_23_24_MatchStats.csv', delimiter=';')
+#data = allTeamsTable(data)
+#print(data)
 

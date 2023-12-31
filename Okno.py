@@ -5,24 +5,106 @@ import customtkinter
 
 from OknoStartowe import OknoStartowe
 from OknoLigowe import OknoLigowe
+from OknoWyszukajDruzyne import OknoWyszukajDruzyne
+from OknoDruzyny import OknoDruzyny
+
 
 class Okno:
     def __init__(self, root):
         self.root = root
+        self.root.geometry("1250x750")
+        self.root.bind("<Key>", self.previousView)
+        self.dataMatchStats = pd.read_csv('./Scraper/MatchStats.csv', delimiter=';')
+        self.viewHistory = [('menuStartowe', None)]
         self.aktywneOkno = OknoStartowe(self.root, self)
+        self.sortingDirection = 0
+        
     
     def clearFrame(self):
        for widgets in self.root.winfo_children():
           widgets.destroy()
           
-    def setView(self, view):
+    def setView(self, view, pom=None):
+        self.clearFrame()
+        self.viewHistory.append((view, pom))
+        
+        if view == "ligowe":
+            self.aktywneOkno = OknoLigowe(self.root, self, pom)
+        elif view == "menuStartowe":
+            self.aktywneOkno = OknoStartowe(self.root, self)
+        elif view == "searchTeam":
+            self.aktywneOkno = OknoWyszukajDruzyne(self.root, self)
+        elif view == "teamStats":
+            self.aktywneOkno = OknoDruzyny(self.root, self, pom)
+            
+    def setPreviousView(self, view, pom=None):
         self.clearFrame()
         del self.aktywneOkno
         
         if view == "ligowe":
-            self.aktywneOkno = OknoLigowe(self.root, self)
+            self.aktywneOkno = OknoLigowe(self.root, self, pom)
         elif view == "menuStartowe":
             self.aktywneOkno = OknoStartowe(self.root, self)
+        elif view == "searchTeam":
+            self.aktywneOkno = OknoWyszukajDruzyne(self.root, self)
+        elif view == "teamStats":
+            self.aktywneOkno = OknoDruzyny(self.root, self, pom)
+            
+    def previousView(self, event):
+        if event.keysym == 'x':
+            if(len(self.viewHistory) == 1):
+                self.setPreviousView('menuStartowe')
+            else:
+                view, pom = self.viewHistory.pop(len(self.viewHistory) - 1)
+                view, pom = self.viewHistory[len(self.viewHistory) - 1]
+                self.setPreviousView(view, pom)
 
+    def przyciskPreviousView(self):
+        if(len(self.viewHistory) == 1):
+            self.setPreviousView('menuStartowe')
+        else:
+            view, pom = self.viewHistory.pop(len(self.viewHistory) - 1)
+            view, pom = self.viewHistory[len(self.viewHistory) - 1]
+            self.setPreviousView(view, pom)
       
-
+    def przyciskCofania(self):
+        self.setView("menuStartowe")
+        
+    def wypelnijTabele(self, table, data):
+        self.clearTable(table)
+        for i, row in data.iterrows():
+            if i % 2 == 1:
+                table.insert("", "end", values=list(row))
+            else:
+                table.insert("", "end", values=list(row))
+    
+        return table
+    
+    def clearTable(self, table):
+        for item in table.get_children():
+            table.delete(item)
+            
+    def showValue(self, event, table):
+        if table.identify_region(event.x, event.y) == 'cell':
+            selected_row = table.selection()[0]
+            column = table.identify_column(event.x)  # Znajdowanie kolumny na którą kliknięto
+            column = int(column.lstrip('#')) - 1  # Konwersja numeru kolumny do indeksu (indeksowane od 0)
+            value = table.item(selected_row)['values'][column]
+            print(f"Wartość klikniętego pola: {value}")
+            columnName = table.heading(column)['text']
+            if columnName in ['Gospodarz', 'Przyjezdny', 'Drużyna']:
+                self.setView("teamStats", value)
+            if columnName in ['League', 'Liga', 'league']:
+                self.setView("ligowe", value)
+                
+    def sortTable(self, column, table, data):
+        print(f"Sortowanie tabeli po kolumnie: {column}")
+        if self.sortingDirection:
+            data = data.sort_values(by=column, ascending=False)
+            self.sortingDirection = 0
+        else:
+            data = data.sort_values(by=column, ascending=True)
+            self.sortingDirection = 1
+            
+        self.wypelnijTabele(table, data)
+    
