@@ -1,21 +1,23 @@
+import pandas as pd
 import tkinter as tk
 from tkinter import ttk
 import customtkinter
-import pandas as pd
-from WyciaganieDanych import teamMatches, listTeamSeasons, teamFutureMatches, teamSquad, findTeamLeague, leagueTable
 
-class OknoDruzyny:
-    def __init__(self, root, glowneOkno, team):
+from WyciaganieDanych import refereeMatches, listRefereeSeasons, listLeagues, listPlayerSeasons, futureMatches, leaguePlayersStats, playerFinishedMatches
+
+class OknoSedziego:
+    def __init__(self, root, glowneOkno, referee):
         self.root = root
-        self.team = team
         self.root.geometry("1250x750")
-        self.glowneOkno = glowneOkno
+        self.referee = referee
         self.season = glowneOkno.defaultSeason
+        self.glowneOkno = glowneOkno
         self.windowView()
 
         
     def windowView(self):
         
+
         self.root.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(0, weight=1)
 
@@ -30,58 +32,65 @@ class OknoDruzyny:
         self.przyciskPowrotu.grid(row=1, column=0, pady=5, padx=10)
         
         # select box do sezonow
-        optionsSeason = listTeamSeasons(self.glowneOkno.dataMatchStats, self.team)
+        optionsSeason = listRefereeSeasons(self.glowneOkno.dataMatchStats, self.referee)
         self.seasonList = customtkinter.CTkOptionMenu(buttonFrame, values=optionsSeason, command=self.changeSeason)
         self.seasonList.grid(row=3, column=0, pady=5, padx=10)
         self.seasonList.set(self.season)
         #self.seasonList.bind("<<ComboboxSelected>>", self.changeSeason)  
-    
-    
-        #pobieranie danych
+        
+        #pobieranie danych do wyswietlenia
         data = self.glowneOkno.dataMatchStats
-        self.league = findTeamLeague(data, self.team, self.season)
-        dataTeamMatches = teamMatches(data, self.season, self.team)
-        dataTeamFutureMatches = teamFutureMatches(self.glowneOkno.futureData, self.team)
-        dataTeamSquad = teamSquad(self.glowneOkno.playerStatsData, self.team, self.season)
-        dataLeagueTable = leagueTable(data, self.league, self.season)
+        dataRefereeMatches = refereeMatches(data, self.glowneOkno.matchEventsData, self.referee, self.season)
 
         # tworzenie panelu widoku ligi
         tableFrame = customtkinter.CTkFrame(self.root)
         tableFrame.grid(row=0, column=1, sticky='nsew')
         
-        # tabela zagranych meczy
-        leagueTableLabel = customtkinter.CTkLabel(tableFrame, text=f"Zagrane mecze {self.team}", anchor="center", width=1070)
-        leagueTableLabel.grid(row=0, column=0)
-        tableLeague = self.createResultsTable(tableFrame, dataTeamMatches)
-        tableLeague.grid(row=1, column=0, pady=5, padx=5)
-        
-        # frame na dwie tabele na dole
-        tableFrameSmall = customtkinter.CTkFrame(tableFrame, fg_color='transparent')
-        tableFrameSmall.grid(row=2, column=0, sticky='nsew')
-        
-        # tabela przyszlych meczy
-        futureMatchesLabel = customtkinter.CTkLabel(tableFrameSmall, text=f"Przyszłe mecze {self.team}", anchor="n")
-        futureMatchesLabel.grid(row=0, column=0, pady=10)
-        tableFutureMatches = self.createFutureMatchesTable(tableFrameSmall, dataTeamFutureMatches)
-        tableFutureMatches.grid(row=1, column=0, padx=10)
-        
-        # tabela zawodnikow
-        teamSquadLabel = customtkinter.CTkLabel(tableFrameSmall, text=f"Zawodnicy {self.team}", anchor="n")
-        teamSquadLabel.grid(row=0, column=1, pady=10)
-        tableTeamSquad = self.createTeamSquadsTable(tableFrameSmall, dataTeamSquad)
-        tableTeamSquad.grid(row=1, column=1, padx=10)
-        
         # tabela ligowa
-        leagueTableLabel = customtkinter.CTkLabel(tableFrameSmall, text=f"Tabela ligowa {self.league}", anchor="n")
-        leagueTableLabel.grid(row=0, column=2, pady=10)
-        tableLeagueTable = self.createLeagueTable(tableFrameSmall, dataLeagueTable)
-        tableLeagueTable.grid(row=1, column=2, padx=10)
+        leagueTableLabel = customtkinter.CTkLabel(tableFrame, text="Sedziowane mecze", anchor="w")
+        leagueTableLabel.grid(row=0, column=0)
+        tableLeague = self.createResultsTable(tableFrame, dataRefereeMatches)
+        tableLeague.grid(row=2, column=0, pady=5, padx=5)
+        
+        # tabela statystyki zawodnika
+        leaguePlayerStatsLabel = customtkinter.CTkLabel(tableFrame, text="Statystyki sędziego", anchor="center", width=500)
+        leaguePlayerStatsLabel.grid(row=0, column=0)
+        tablePlayerStats = self.createRefereeStatsDisplay(tableFrame, dataRefereeMatches)
+        tablePlayerStats.grid(row=1, column=0, pady=5, padx=5)
+        
         
     def changeSeason(self, event=None):
         self.season = self.seasonList.get()
         self.windowView()
 
+
+    def createLeagueTable(self, root, data):
+
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview", highlightthickness=0, bd=0, font=('Calibri', 11))
+        style.map('Treeview', foreground=[('!selected', '#E8E8E8')], background=[('!selected', '#323232')])
+        style.map('Treeview.Heading', foreground=[('!selected', '#FFFFFF')], background=[('!selected', '#789789')])
         
+
+        tableLeague = ttk.Treeview(root)
+        tableLeague["columns"] = list(data.columns)
+        tableLeague["show"] = "headings"
+        tableLeague["height"] = 20
+        
+        for column in tableLeague["columns"]:
+            if column == 'Drużyna':
+                tableLeague.column(column, anchor="center", width=100)
+            else:
+                tableLeague.column(column, anchor="center", width=62)
+        
+        for col in data.columns:
+            tableLeague.heading(col, text=col, command=lambda c=col: self.glowneOkno.sortTable(c, tableLeague, data))
+
+        tableLeague = self.glowneOkno.wypelnijTabele(tableLeague, data)
+        tableLeague.bind("<ButtonRelease-1>", lambda event: self.glowneOkno.showValue(event, tableLeague))
+        
+        return tableLeague
         
     def createResultsTable(self, root, data):
 
@@ -106,10 +115,7 @@ class OknoDruzyny:
         y_scrollbar.config(command=tableResults.yview)
         
         for column in tableResults["columns"]:
-            if column in ['Gospodarz', 'Przyjezdny', 'Sędzia', 'Data']:
-                tableResults.column(column, anchor="center", width=100)
-            else:
-                tableResults.column(column, anchor="center", width=50)
+            tableResults.column(column, anchor="center", width=80)
         
         for col in data.columns:
             tableResults.heading(col, text=col, command=lambda c=col: self.glowneOkno.sortTable(c, tableResults, data))
@@ -118,8 +124,8 @@ class OknoDruzyny:
         tableResults.bind("<ButtonRelease-1>", lambda event: self.glowneOkno.showValue(event, tableResults))
         
         return frame
-    
-    def createFutureMatchesTable(self, root, data):
+
+    def createFutureTable(self, root, data):
 
         style = ttk.Style()
         
@@ -128,7 +134,7 @@ class OknoDruzyny:
         style.map('Treeview', foreground=[('!selected', '#E8E8E8')], background=[('!selected', '#323232')])
         style.map('Treeview.Heading', foreground=[('!selected', '#FFFFFF')], background=[('!selected', '#789789')])
         
-        frame = customtkinter.CTkFrame(root, height=500)
+        frame = customtkinter.CTkFrame(root, height=100)
         
         y_scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL)
         y_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -137,30 +143,22 @@ class OknoDruzyny:
         tableResults.pack(side=tk.LEFT, fill=tk.Y)
         tableResults["columns"] = list(data.columns)
         tableResults["show"] = "headings"
-        tableResults["height"] = 20
+        tableResults["height"] = 10
         
         y_scrollbar.config(command=tableResults.yview)
         
         for column in tableResults["columns"]:
-            if column in ['Gospodarz', 'Przyjezdny']:
-                tableResults.column(column, anchor="center", width=130)
-            else:
-                tableResults.column(column, anchor="center", width=80)
+            tableResults.column(column, anchor="center", width=100)
         
         for col in data.columns:
             tableResults.heading(col, text=col, command=lambda c=col: self.glowneOkno.sortTable(c, tableResults, data))
 
         tableResults = self.glowneOkno.wypelnijTabele(tableResults, data)
-        
-        if(data.shape[0] < 20):
-            for i in range(data.shape[0], 20-data.shape[0]):
-                tableResults.insert("", "end", values=['','',''])
-        
         tableResults.bind("<ButtonRelease-1>", lambda event: self.glowneOkno.showValue(event, tableResults))
         
         return frame
     
-    def createTeamSquadsTable(self, root, data):
+    def createPlayerStatsTable(self, root, data):
 
         style = ttk.Style()
         
@@ -183,7 +181,12 @@ class OknoDruzyny:
         y_scrollbar.config(command=tableResults.yview)
         
         for column in tableResults["columns"]:
-            tableResults.column(column, anchor="center", width=130)
+            if column == 'Zawodnik':
+                tableResults.column(column, anchor="center", width=120)
+            elif column in ('Drużyna', 'Czerwone'):
+                tableResults.column(column, anchor="center", width=70)
+            else:
+                tableResults.column(column, anchor="center", width=45)
         
         for col in data.columns:
             tableResults.heading(col, text=col, command=lambda c=col: self.glowneOkno.sortTable(c, tableResults, data))
@@ -193,31 +196,35 @@ class OknoDruzyny:
         
         return frame
     
-    def createLeagueTable(self, root, data):
-
-        style = ttk.Style()
-        style.theme_use("clam")
-        style.configure("Treeview", highlightthickness=0, bd=0, font=('Calibri', 11))
-        style.map('Treeview', foreground=[('!selected', '#E8E8E8')], background=[('!selected', '#323232')])
-        style.map('Treeview.Heading', foreground=[('!selected', '#FFFFFF')], background=[('!selected', '#789789')])
+    def createRefereeStatsDisplay(self, root, data):
+        frame = customtkinter.CTkFrame(root, height=100, fg_color="transparent")
         
-
-        tableLeague = ttk.Treeview(root)
-        tableLeague["columns"] = list(data.columns)
-        tableLeague["show"] = "headings"
-        tableLeague["height"] = 20
+        #referee = data.iloc[0]['Sędzia']
+        label_text = f"Sędzia: {self.referee}"
+        label = customtkinter.CTkLabel(frame, text=label_text)
+        label.grid(row=0, column=0)
         
-        for column in tableLeague["columns"]:
-            if column == 'Drużyna':
-                tableLeague.column(column, anchor="center", width=100)
-            else:
-                tableLeague.column(column, anchor="center", width=50)
-        
-        for col in data.columns:
-            tableLeague.heading(col, text=col, command=lambda c=col: self.glowneOkno.sortTable(c, tableLeague, data))
-
-        tableLeague = self.glowneOkno.wypelnijTabele(tableLeague, data)
-        tableLeague.bind("<ButtonRelease-1>", lambda event: self.glowneOkno.showValue(event, tableLeague))
-        
-        return tableLeague
+        meanYellowHome = round(data['Żółte kartki gospodarz'].mean(), 2)
+        label_text = f"Średnia żółtych kartek dla gospodarza: {meanYellowHome}"
+        label = customtkinter.CTkLabel(frame, text=label_text)
+        label.grid(row=1, column=0)
     
+        meanYellowAway = round(data['Żółte kartki przyjezdny'].mean(), 2)
+        label_text = f"Średnia żółtych kartek dla przyjezdnych: {meanYellowAway}"
+        label = customtkinter.CTkLabel(frame, text=label_text)
+        label.grid(row=2, column=0)
+        
+        meanRedHome = round(data['Czerwone kartki gospodarz'].mean(), 2)
+        label_text = f"Średnia czerwonych kartek dla gospodarza: {meanRedHome}"
+        label = customtkinter.CTkLabel(frame, text=label_text)
+        label.grid(row=3, column=0)
+        
+        meanRedAway = round(data['Czerwone kartki przyjezdny'].mean(), 2)
+        label_text = f"Średnia czerwonych kartek dla przyjezdnego: {meanRedAway}"
+        label = customtkinter.CTkLabel(frame, text=label_text)
+        label.grid(row=4, column=0)
+        
+
+
+        
+        return frame

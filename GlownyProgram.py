@@ -15,7 +15,7 @@ class App(customtkinter.CTk):
 
     def center_window(self):
         screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
+        screen_height = self.winfo_screenheight()   
 
         x = (screen_width // 2) - (1250 // 2)
         y = (screen_height // 2) - (750 // 2)

@@ -12,35 +12,30 @@ class OknoStartowe:
         self.glowneOkno = glowneOkno
     
     def windowView(self):
-        self.przycisk_aktualizacji = customtkinter.CTkButton(master=self.root, text="Aktualizuj dane", command=self.aktualizuj_dane)
-        self.przycisk_ustawien = customtkinter.CTkButton(master=self.root, text="Ustawienia", command=self.otworz_ustawienia)
+        
+        self.root.grid_columnconfigure(1, weight=0)
+        self.root.grid_rowconfigure(0, weight=0)
+        
         self.przycisk_dane_ligi = customtkinter.CTkButton(master=self.root, text="Dane ligi", command=self.otworz_dane_ligi)
         self.przycisk_wyszukaj_zawodnika = customtkinter.CTkButton(master=self.root, text="Wyszukaj zawodnika", command=self.wyszukaj_zawodnika)
         self.przycisk_wyszukaj_druzyne = customtkinter.CTkButton(master=self.root, text="Wyszukaj drużynę", command=self.wyszukaj_druzyne)
         self.przycisk_wyszukaj_sedziego = customtkinter.CTkButton(master=self.root, text="Wyszukaj sędziego", command=self.wyszukaj_sedziego)
-        self.przycisk_wyszukaj_H2H = customtkinter.CTkButton(master=self.root, text="Wyszukaj H2H", command=self.wyszukaj_H2H)
+        #self.przycisk_wyszukaj_H2H = customtkinter.CTkButton(master=self.root, text="Wyszukaj H2H", command=self.wyszukaj_H2H)
 
         self.root.grid_anchor('center')
-        self.przycisk_aktualizacji.grid(row=1, column=0, pady=5)
-        self.przycisk_ustawien.grid(row=2, column=0, pady=5)
         self.przycisk_dane_ligi.grid(row=3, column=0, pady=5)
         self.przycisk_wyszukaj_zawodnika.grid(row=4, column=0, pady=5)
         self.przycisk_wyszukaj_druzyne.grid(row=5, column=0, pady=5)
         self.przycisk_wyszukaj_sedziego.grid(row=6, column=0, pady=5)
-        self.przycisk_wyszukaj_H2H.grid(row=7, column=0, pady=5)
+        #self.przycisk_wyszukaj_H2H.grid(row=7, column=0, pady=5)
         
-    def aktualizuj_dane(self):
-        print("Aktualizacja danych")
-
-    def otworz_ustawienia(self):
-        print("Otwieranie ustawień")
-
     def otworz_dane_ligi(self):
         print("Otwieranie danych ligi")
         self.glowneOkno.setView("ligowe", 'PremierLeague')
 
     def wyszukaj_zawodnika(self):
         print("Wyszukiwanie zawodnika")
+        self.glowneOkno.setView("searchPlayer")
 
     def wyszukaj_druzyne(self):
         print("Wyszukiwanie drużyny")
@@ -48,6 +43,7 @@ class OknoStartowe:
 
     def wyszukaj_sedziego(self):
         print("Wyszukiwanie sędziego")
+        self.glowneOkno.setView("searchReferee")
         
     def wyszukaj_H2H(self):
         print("Wyszukiwanie H2H")
